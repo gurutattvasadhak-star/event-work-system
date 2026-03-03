@@ -10,6 +10,7 @@ def init_db():
     conn = get_connection()
     cur = conn.cursor()
 
+    # USERS TABLE
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +21,7 @@ def init_db():
     )
     """)
 
+    # TASKS TABLE
     cur.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,21 +38,33 @@ def init_db():
     conn.commit()
     conn.close()
 
+# 🚨 VERY IMPORTANT: always ensure DB exists
+init_db()
+
 def add_user(name, email, password, role):
     conn = get_connection()
     cur = conn.cursor()
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    cur.execute(
-        "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-        (name, email, hashed, role),
-    )
-    conn.commit()
+
+    try:
+        cur.execute(
+            "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+            (name, email, hashed, role),
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # user already exists
+
     conn.close()
 
 def login_user(email, password):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, name, password, role FROM users WHERE email=?", (email,))
+
+    cur.execute(
+        "SELECT id, name, password, role FROM users WHERE email=?",
+        (email,)
+    )
     row = cur.fetchone()
     conn.close()
 
