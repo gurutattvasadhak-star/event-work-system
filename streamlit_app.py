@@ -1,6 +1,4 @@
 import streamlit as st
+from app import main
 
-st.set_page_config(page_title="Event Work System", layout="wide")
-
-st.title("Event Work System")
-st.write("If you can see this, deployment is successful ✅")
+main()
