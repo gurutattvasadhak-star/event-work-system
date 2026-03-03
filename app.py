@@ -1,5 +1,5 @@
 import streamlit as st
-from auth import login_user, add_user
+from auth import login_user, add_user, init_db
 from tasks import (
     create_task,
     get_all_members,
@@ -8,9 +8,20 @@ from tasks import (
     mark_task_completed,
 )
 
+# ---------------- MAIN APP ----------------
 def run():
     st.set_page_config(page_title="Event Work System", layout="wide")
-    st.title("Event Accounting & Work Allocation System")
+    st.title("📋 Event Accounting & Work Allocation System")
+
+    # Initialize database & tables (VERY IMPORTANT for cloud)
+    init_db()
+
+    # Create default users if not exist (runs safely)
+    try:
+        add_user("Admin Head", "head@test.com", "admin123", "head")
+        add_user("Team Member", "member@test.com", "member123", "member")
+    except:
+        pass
 
     if "user" not in st.session_state:
         st.session_state.user = None
@@ -20,8 +31,9 @@ def run():
     else:
         dashboard()
 
+# ---------------- LOGIN UI ----------------
 def login_ui():
-    st.subheader("Login")
+    st.subheader("🔐 Login")
 
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
@@ -32,25 +44,34 @@ def login_ui():
             st.session_state.user = user
             st.rerun()
         else:
-            st.error("Invalid login")
+            st.error("Invalid email or password")
 
+# ---------------- DASHBOARD ----------------
 def dashboard():
     user = st.session_state.user
     st.success(f"Logged in as {user['name']} ({user['role']})")
 
-    if st.button("Logout"):
-        st.session_state.user = None
-        st.rerun()
+    col1, col2 = st.columns([8, 2])
+    with col2:
+        if st.button("Logout"):
+            st.session_state.user = None
+            st.rerun()
 
     if user["role"] == "head":
         head_dashboard(user)
     else:
         member_dashboard(user)
 
+# ---------------- HEAD DASHBOARD ----------------
 def head_dashboard(user):
-    st.subheader("Assign Task")
+    st.subheader("➕ Assign New Task")
 
     members = get_all_members()
+
+    if not members:
+        st.warning("No members found")
+        return
+
     member_map = {m[1]: m[0] for m in members}
 
     title = st.text_input("Task Title")
@@ -60,6 +81,10 @@ def head_dashboard(user):
     priority = st.selectbox("Priority", ["Low", "Medium", "High"])
 
     if st.button("Assign Task"):
+        if not title:
+            st.warning("Task title is required")
+            return
+
         create_task(
             title,
             description,
@@ -68,19 +93,40 @@ def head_dashboard(user):
             str(due_date),
             priority,
         )
-        st.success("Task assigned successfully")
+        st.success("✅ Task assigned successfully")
 
-    st.subheader("All Tasks")
+    st.divider()
+    st.subheader("📊 All Tasks")
+
     tasks = get_all_tasks()
-    st.table(tasks)
+    if tasks:
+        st.table(tasks)
+    else:
+        st.info("No tasks assigned yet")
 
+# ---------------- MEMBER DASHBOARD ----------------
 def member_dashboard(user):
-    st.subheader("My Tasks")
+    st.subheader("🧑‍💻 My Tasks")
+
     tasks = get_tasks_for_member(user["id"])
 
+    if not tasks:
+        st.info("No tasks assigned yet")
+        return
+
     for t in tasks:
-        st.write(f"**{t[1]}** — {t[5]}")
+        st.markdown(f"### {t[1]}")
+        st.write(t[2])
+        st.write(f"📅 Due: {t[3]} | ⚡ Priority: {t[4]} | 📌 Status: {t[5]}")
+
         if t[5] != "Completed":
-            if st.button(f"Mark Completed {t[0]}"):
+            if st.button(f"Mark Completed (Task {t[0]})"):
                 mark_task_completed(t[0])
+                st.success("Task marked as completed")
                 st.rerun()
+
+        st.divider()
+
+# ---------------- ENTRY POINT ----------------
+if __name__ == "__main__":
+    run()
