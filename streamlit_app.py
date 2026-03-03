@@ -1,6 +1,5 @@
-import streamlit as st
-from app import app_ui
+# streamlit_app.py
+import app
 
-# Streamlit entry point
-if __name__ == "__main__":
-    app_ui()
+# Run the main Streamlit application
+app.run()
