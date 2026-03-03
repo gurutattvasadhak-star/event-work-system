@@ -1,38 +1,63 @@
 import sqlite3
 import bcrypt
 
-DB_PATH = "data/system.db"
+DB = "database.db"
 
-def login_user(email, password):
-    conn = sqlite3.connect(DB_PATH)
+def get_connection():
+    return sqlite3.connect(DB, check_same_thread=False)
+
+def init_db():
+    conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, name, email, role, password FROM users WHERE email=?", (email,))
-    row = cur.fetchone()
-    conn.close()
-
-    if row:
-        stored_hash = row[4]
-        if bcrypt.checkpw(password.encode(), stored_hash.encode()):
-            return {
-                "id": row[0],
-                "name": row[1],
-                "email": row[2],
-                "role": row[3]
-            }
-    return None
-
-
-def add_user(name, email, password, role="member"):
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-
-    cur.execute(
-        "INSERT INTO users (name, email, role, password) VALUES (?, ?, ?, ?)",
-        (name, email, role, hashed)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE,
+        password BLOB,
+        role TEXT
     )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        description TEXT,
+        member_id INTEGER,
+        head_id INTEGER,
+        due_date TEXT,
+        priority TEXT,
+        status TEXT
+    )
+    """)
 
     conn.commit()
     conn.close()
+
+def add_user(name, email, password, role):
+    conn = get_connection()
+    cur = conn.cursor()
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    cur.execute(
+        "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+        (name, email, hashed, role),
+    )
+    conn.commit()
+    conn.close()
+
+def login_user(email, password):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, password, role FROM users WHERE email=?", (email,))
+    row = cur.fetchone()
+    conn.close()
+
+    if row and bcrypt.checkpw(password.encode(), row[2]):
+        return {
+            "id": row[0],
+            "name": row[1],
+            "role": row[3],
+        }
+    return None
