@@ -1,5 +1,6 @@
 import streamlit as st
 from auth import login_user, add_user, init_db
+from emailer import send_notice_email
 from tasks import (
     create_task,
     get_all_members,
@@ -130,3 +131,4 @@ def member_dashboard(user):
 # ---------------- ENTRY POINT ----------------
 if __name__ == "__main__":
     run()
+
