@@ -1,21 +1,33 @@
-import smtplib
-from email.message import EmailMessage
 import os
+import smtplib
+from email.mime.text import MIMEText
 
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
 
-def send_task_email(to_email, subject, body):
+def send_notice_email(to_email, subject, message):
 
-    msg = EmailMessage()
-    msg["From"] = SMTP_EMAIL
-    msg["To"] = to_email
+    msg = MIMEText(message)
+
     msg["Subject"] = subject
-    msg.set_content(body)
+    msg["From"] = EMAIL_USER
+    msg["To"] = to_email
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.send_message(msg)
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+
+        server.login(EMAIL_USER, EMAIL_PASS)
+
+        server.sendmail(
+            EMAIL_USER,
+            [to_email],
+            msg.as_string()
+        )
+
+        server.quit()
+
+        return {"status": "Email sent"}
+
     except Exception as e:
-        print("Email sending failed:", e)
+        return {"status": str(e)}
