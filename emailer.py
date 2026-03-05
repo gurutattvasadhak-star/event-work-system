@@ -27,7 +27,7 @@ def send_notice_email(to_email, subject, message):
 
         server.quit()
 
-        return {"status": "Email sent"}
+        return "Email sent successfully"
 
     except Exception as e:
-        return {"status": str(e)}
+        return str(e)
