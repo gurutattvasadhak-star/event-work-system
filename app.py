@@ -81,6 +81,9 @@ def head_dashboard(user):
     due_date = st.date_input("Due Date")
     priority = st.selectbox("Priority", ["Low", "Medium", "High"])
 
+    send_email = st.checkbox("Send Email Notification")
+member_email = st.text_input("Member Email (for notification)")
+
     if st.button("Assign Task"):
         if not title:
             st.warning("Task title is required")
@@ -95,6 +98,26 @@ def head_dashboard(user):
             priority,
         )
         st.success("✅ Task assigned successfully")
+
+if send_email and member_email:
+    message = f"""
+    New Task Assigned
+
+    Task: {title}
+    Description: {description}
+    Due Date: {due_date}
+    Priority: {priority}
+
+    Assigned by: {user['name']}
+    """
+
+    result = send_notice_email(
+        member_email,
+        "New Task Assigned",
+        message
+    )
+
+    st.info(result)
 
     st.divider()
     st.subheader("📊 All Tasks")
