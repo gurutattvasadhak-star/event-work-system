@@ -14,10 +14,10 @@ def run():
     st.set_page_config(page_title="Event Work System", layout="wide")
     st.title("📋 Event Accounting & Work Allocation System")
 
-    # Initialize database
+    # Initialize database (important for cloud)
     init_db()
 
-    # Create default users
+    # Create default users safely
     try:
         add_user("Admin Head", "head@test.com", "admin123", "head")
         add_user("Team Member", "member@test.com", "member123", "member")
@@ -71,7 +71,7 @@ def dashboard():
 # ---------------- HEAD DASHBOARD ----------------
 def head_dashboard(user):
 
-    # -------- CREATE MEMBER --------
+    # ---------- CREATE MEMBER ----------
     st.subheader("👤 Create New Member")
 
     new_name = st.text_input("Member Name")
@@ -90,7 +90,7 @@ def head_dashboard(user):
 
     st.divider()
 
-    # -------- ASSIGN TASK --------
+    # ---------- ASSIGN TASK ----------
     st.subheader("➕ Assign New Task")
 
     members = get_all_members()
@@ -105,7 +105,7 @@ def head_dashboard(user):
     description = st.text_area("Task Description")
     member_name = st.selectbox("Assign to", list(member_map.keys()))
     due_date = st.date_input("Due Date")
-    priority = st.selectbox("Priority", ["Low", "Medium", "High"])
+    priority = st.selectbox("Priority", ["Low","Medium","High"])
 
     send_email = st.checkbox("Send Email Notification")
     member_email = st.text_input("Member Email (for notification)")
@@ -122,15 +122,17 @@ def head_dashboard(user):
             member_map[member_name],
             user["id"],
             str(due_date),
-            priority,
+            priority
         )
 
         st.success("✅ Task assigned successfully")
 
-        # -------- SEND EMAIL --------
-        if send_email and member_email:
+        # ---------- EMAIL NOTIFICATION ----------
+        if send_email:
 
-            message = f"""
+            if member_email:
+
+                message = f"""
 New Task Assigned
 
 Task: {title}
@@ -141,17 +143,24 @@ Priority: {priority}
 Assigned by: {user['name']}
 """
 
-            result = send_notice_email(
-                member_email,
-                "New Task Assigned",
-                message
-            )
+                try:
+                    result = send_notice_email(
+                        member_email,
+                        "New Task Assigned",
+                        message
+                    )
 
-            st.info(result)
+                    st.success("📧 Email notification sent")
+
+                except Exception as e:
+                    st.error(f"Email sending failed: {e}")
+
+            else:
+                st.warning("⚠ Email notification selected but no email entered")
 
     st.divider()
 
-    # -------- VIEW TASKS --------
+    # ---------- ALL TASKS ----------
     st.subheader("📊 All Tasks")
 
     tasks = get_all_tasks()
@@ -180,9 +189,7 @@ def member_dashboard(user):
         st.write(f"📅 Due: {t[3]} | ⚡ Priority: {t[4]} | 📌 Status: {t[5]}")
 
         if t[5] != "Completed":
-
-            if st.button(f"Mark Completed Task {t[0]}"):
-
+            if st.button(f"Mark Completed (Task {t[0]})"):
                 mark_task_completed(t[0])
                 st.success("Task marked as completed")
                 st.rerun()
