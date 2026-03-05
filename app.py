@@ -66,6 +66,22 @@ def dashboard():
 # ---------------- HEAD DASHBOARD ----------------
 def head_dashboard(user):
     st.subheader("➕ Assign New Task")
+    # ---------------- ADD MEMBER ----------------
+st.subheader("👤 Create New Member")
+
+new_name = st.text_input("Member Name")
+new_email = st.text_input("Member Email")
+new_password = st.text_input("Member Password", type="password")
+
+if st.button("Create Member"):
+    if new_name and new_email and new_password:
+        try:
+            add_user(new_name, new_email, new_password, "member")
+            st.success("✅ Member created successfully")
+        except:
+            st.error("Member already exists or error occurred")
+    else:
+        st.warning("Please fill all fields")
 
     members = get_all_members()
 
@@ -154,4 +170,5 @@ def member_dashboard(user):
 # ---------------- ENTRY POINT ----------------
 if __name__ == "__main__":
     run()
+
 
