@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 from auth import login_user, add_user, init_db
 from emailer import send_notice_email
@@ -14,10 +15,9 @@ def run():
     st.set_page_config(page_title="Event Work System", layout="wide")
     st.title("📋 Event Accounting & Work Allocation System")
 
-    # Initialize database (important for cloud)
     init_db()
 
-    # Create default users safely
+    # Create default users
     try:
         add_user("Admin Head", "head@test.com", "admin123", "head")
         add_user("Team Member", "member@test.com", "member123", "member")
@@ -33,14 +33,16 @@ def run():
         dashboard()
 
 
-# ---------------- LOGIN UI ----------------
+# ---------------- LOGIN ----------------
 def login_ui():
+
     st.subheader("🔐 Login")
 
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
+
         user = login_user(email, password)
 
         if user:
@@ -52,7 +54,9 @@ def login_ui():
 
 # ---------------- DASHBOARD ----------------
 def dashboard():
+
     user = st.session_state.user
+
     st.success(f"Logged in as {user['name']} ({user['role']})")
 
     col1, col2 = st.columns([8,2])
@@ -79,12 +83,16 @@ def head_dashboard(user):
     new_password = st.text_input("Member Password", type="password")
 
     if st.button("Create Member"):
+
         if new_name and new_email and new_password:
+
             try:
                 add_user(new_name, new_email, new_password, "member")
                 st.success("✅ Member created successfully")
+
             except:
-                st.error("Member already exists or error occurred")
+                st.error("Member already exists")
+
         else:
             st.warning("Please fill all fields")
 
@@ -99,16 +107,22 @@ def head_dashboard(user):
         st.warning("No members found")
         return
 
-    member_map = {m[1]: m[0] for m in members}
+    # Map member name -> id and email
+    member_map = {m[1]: {"id": m[0], "email": m[2]} for m in members}
 
     title = st.text_input("Task Title")
     description = st.text_area("Task Description")
+
     member_name = st.selectbox("Assign to", list(member_map.keys()))
+
     due_date = st.date_input("Due Date")
+
     priority = st.selectbox("Priority", ["Low","Medium","High"])
 
     send_email = st.checkbox("Send Email Notification")
-    member_email = st.text_input("Member Email (for notification)")
+
+    # Automatically detect email
+    member_email = member_map[member_name]["email"]
 
     if st.button("Assign Task"):
 
@@ -119,7 +133,7 @@ def head_dashboard(user):
         create_task(
             title,
             description,
-            member_map[member_name],
+            member_map[member_name]["id"],
             user["id"],
             str(due_date),
             priority
@@ -127,12 +141,10 @@ def head_dashboard(user):
 
         st.success("✅ Task assigned successfully")
 
-        # ---------- EMAIL NOTIFICATION ----------
+        # ---------- EMAIL ----------
         if send_email:
 
-            if member_email:
-
-                message = f"""
+            message = f"""
 New Task Assigned
 
 Task: {title}
@@ -143,30 +155,34 @@ Priority: {priority}
 Assigned by: {user['name']}
 """
 
-                try:
-                    result = send_notice_email(
-                        member_email,
-                        "New Task Assigned",
-                        message
-                    )
+            try:
 
-                    st.success("📧 Email notification sent")
+                send_notice_email(
+                    member_email,
+                    "New Task Assigned",
+                    message
+                )
 
-                except Exception as e:
-                    st.error(f"Email sending failed: {e}")
+                st.success(f"📧 Email sent to {member_email}")
 
-            else:
-                st.warning("⚠ Email notification selected but no email entered")
+            except Exception as e:
+                st.error(f"Email sending failed: {e}")
 
     st.divider()
 
-    # ---------- ALL TASKS ----------
-    st.subheader("📊 All Tasks")
+    # ---------- ALL TASKS DASHBOARD ----------
+    st.subheader("📊 All Members Work Status")
 
     tasks = get_all_tasks()
 
     if tasks:
-        st.table(tasks)
+
+        import pandas as pd
+
+        df = pd.DataFrame(tasks)
+
+        st.dataframe(df, use_container_width=True)
+
     else:
         st.info("No tasks assigned yet")
 
@@ -186,12 +202,17 @@ def member_dashboard(user):
 
         st.markdown(f"### {t[1]}")
         st.write(t[2])
+
         st.write(f"📅 Due: {t[3]} | ⚡ Priority: {t[4]} | 📌 Status: {t[5]}")
 
         if t[5] != "Completed":
+
             if st.button(f"Mark Completed (Task {t[0]})"):
+
                 mark_task_completed(t[0])
+
                 st.success("Task marked as completed")
+
                 st.rerun()
 
         st.divider()
@@ -200,3 +221,4 @@ def member_dashboard(user):
 # ---------------- ENTRY POINT ----------------
 if __name__ == "__main__":
     run()
+```
