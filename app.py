@@ -15,9 +15,10 @@ def run():
     st.set_page_config(page_title="Event Work System", layout="wide")
     st.title("📋 Event Accounting & Work Allocation System")
 
+    # Initialize database
     init_db()
 
-    # Create default users
+    # Default users (safe creation)
     try:
         add_user("Admin Head", "head@test.com", "admin123", "head")
         add_user("Team Member", "member@test.com", "member123", "member")
@@ -33,16 +34,14 @@ def run():
         dashboard()
 
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN UI ----------------
 def login_ui():
-
     st.subheader("🔐 Login")
 
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
 
     if st.button("Login"):
-
         user = login_user(email, password)
 
         if user:
@@ -54,12 +53,11 @@ def login_ui():
 
 # ---------------- DASHBOARD ----------------
 def dashboard():
-
     user = st.session_state.user
 
     st.success(f"Logged in as {user['name']} ({user['role']})")
 
-    col1, col2 = st.columns([8,2])
+    col1, col2 = st.columns([8, 2])
 
     with col2:
         if st.button("Logout"):
@@ -75,7 +73,7 @@ def dashboard():
 # ---------------- HEAD DASHBOARD ----------------
 def head_dashboard(user):
 
-    # ---------- CREATE MEMBER ----------
+    # -------- CREATE MEMBER --------
     st.subheader("👤 Create New Member")
 
     new_name = st.text_input("Member Name")
@@ -85,20 +83,18 @@ def head_dashboard(user):
     if st.button("Create Member"):
 
         if new_name and new_email and new_password:
-
             try:
                 add_user(new_name, new_email, new_password, "member")
                 st.success("✅ Member created successfully")
-
+                st.rerun()
             except:
                 st.error("Member already exists")
-
         else:
             st.warning("Please fill all fields")
 
     st.divider()
 
-    # ---------- ASSIGN TASK ----------
+    # -------- ASSIGN TASK --------
     st.subheader("➕ Assign New Task")
 
     members = get_all_members()
@@ -107,27 +103,22 @@ def head_dashboard(user):
         st.warning("No members found")
         return
 
-    # Map member name -> id and email
     member_map = {m[1]: {"id": m[0], "email": m[2]} for m in members}
 
     title = st.text_input("Task Title")
     description = st.text_area("Task Description")
-
-    member_name = st.selectbox("Assign to", list(member_map.keys()))
-
+    member_name = st.selectbox("Assign To", list(member_map.keys()))
     due_date = st.date_input("Due Date")
-
-    priority = st.selectbox("Priority", ["Low","Medium","High"])
+    priority = st.selectbox("Priority", ["Low", "Medium", "High"])
 
     send_email = st.checkbox("Send Email Notification")
 
-    # Automatically detect email
     member_email = member_map[member_name]["email"]
 
     if st.button("Assign Task"):
 
         if not title:
-            st.warning("Task title is required")
+            st.warning("Task title required")
             return
 
         create_task(
@@ -141,7 +132,7 @@ def head_dashboard(user):
 
         st.success("✅ Task assigned successfully")
 
-        # ---------- EMAIL ----------
+        # ---- EMAIL NOTIFICATION ----
         if send_email:
 
             message = f"""
@@ -156,33 +147,23 @@ Assigned by: {user['name']}
 """
 
             try:
-
-                send_notice_email(
-                    member_email,
-                    "New Task Assigned",
-                    message
-                )
-
+                send_notice_email(member_email, "New Task Assigned", message)
                 st.success(f"📧 Email sent to {member_email}")
-
             except Exception as e:
                 st.error(f"Email sending failed: {e}")
 
     st.divider()
 
-    # ---------- ALL TASKS DASHBOARD ----------
+    # -------- ALL TASKS --------
     st.subheader("📊 All Members Work Status")
 
     tasks = get_all_tasks()
 
     if tasks:
-
         import pandas as pd
 
         df = pd.DataFrame(tasks)
-
         st.dataframe(df, use_container_width=True)
-
     else:
         st.info("No tasks assigned yet")
 
@@ -202,17 +183,12 @@ def member_dashboard(user):
 
         st.markdown(f"### {t[1]}")
         st.write(t[2])
-
         st.write(f"📅 Due: {t[3]} | ⚡ Priority: {t[4]} | 📌 Status: {t[5]}")
 
         if t[5] != "Completed":
-
             if st.button(f"Mark Completed (Task {t[0]})"):
-
                 mark_task_completed(t[0])
-
                 st.success("Task marked as completed")
-
                 st.rerun()
 
         st.divider()
