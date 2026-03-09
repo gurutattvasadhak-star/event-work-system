@@ -1,5 +1,3 @@
-# streamlit_app.py
-import app
+from app import run
 
-# Run the main Streamlit application
-app.run()
+run()
