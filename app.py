@@ -84,7 +84,7 @@ def head_dashboard(user):
         st.warning("No members found")
         return
 
-    member_map = {m[1]: {"id": m[0], "email": m[2]} for m in members}
+    member_map = {m[1]: {"id": m[0], "email": m[2] if len(m) > 2 else ""} for m in members}
 
     title = st.text_input("Task Title")
     description = st.text_area("Task Description")
@@ -174,3 +174,4 @@ def member_dashboard(user):
 
 if __name__ == "__main__":
     run()
+
