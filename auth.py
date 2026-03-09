@@ -38,40 +38,47 @@ def init_db():
     conn.commit()
     conn.close()
 
-# 🚨 VERY IMPORTANT: always ensure DB exists
+# Ensure DB exists
 init_db()
 
+# ADD USER
 def add_user(name, email, password, role):
     conn = get_connection()
     cur = conn.cursor()
+
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
     try:
         cur.execute(
             "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
-            (name, email, hashed, role),
+            (name, email, hashed, role)
         )
         conn.commit()
     except sqlite3.IntegrityError:
-        pass  # user already exists
+        pass
 
     conn.close()
 
+
+# LOGIN USER
 def login_user(email, password):
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, name, password, role FROM users WHERE email=?",
+        "SELECT id, name, email, password, role FROM users WHERE email=?",
         (email,)
     )
+
     row = cur.fetchone()
     conn.close()
 
-    if row and bcrypt.checkpw(password.encode(), row[2]):
+    if row and bcrypt.checkpw(password.encode(), row[3]):
         return {
             "id": row[0],
             "name": row[1],
-            "role": row[3],
+            "email": row[2],
+            "role": row[4]
         }
+
     return None
