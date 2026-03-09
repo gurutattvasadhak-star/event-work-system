@@ -1,24 +1,14 @@
-```python
 import streamlit as st
 from auth import login_user, add_user, init_db
 from emailer import send_notice_email
-from tasks import (
-    create_task,
-    get_all_members,
-    get_tasks_for_member,
-    get_all_tasks,
-    mark_task_completed,
-)
+from tasks import create_task, get_all_members, get_tasks_for_member, get_all_tasks, mark_task_completed
 
-# ---------------- MAIN APP ----------------
 def run():
     st.set_page_config(page_title="Event Work System", layout="wide")
     st.title("📋 Event Accounting & Work Allocation System")
 
-    # Initialize database
     init_db()
 
-    # Default users (safe creation)
     try:
         add_user("Admin Head", "head@test.com", "admin123", "head")
         add_user("Team Member", "member@test.com", "member123", "member")
@@ -33,8 +23,6 @@ def run():
     else:
         dashboard()
 
-
-# ---------------- LOGIN UI ----------------
 def login_ui():
     st.subheader("🔐 Login")
 
@@ -50,14 +38,12 @@ def login_ui():
         else:
             st.error("Invalid email or password")
 
-
-# ---------------- DASHBOARD ----------------
 def dashboard():
     user = st.session_state.user
 
     st.success(f"Logged in as {user['name']} ({user['role']})")
 
-    col1, col2 = st.columns([8, 2])
+    col1, col2 = st.columns([8,2])
 
     with col2:
         if st.button("Logout"):
@@ -69,11 +55,8 @@ def dashboard():
     else:
         member_dashboard(user)
 
-
-# ---------------- HEAD DASHBOARD ----------------
 def head_dashboard(user):
 
-    # -------- CREATE MEMBER --------
     st.subheader("👤 Create New Member")
 
     new_name = st.text_input("Member Name")
@@ -85,8 +68,7 @@ def head_dashboard(user):
         if new_name and new_email and new_password:
             try:
                 add_user(new_name, new_email, new_password, "member")
-                st.success("✅ Member created successfully")
-                st.rerun()
+                st.success("Member created successfully")
             except:
                 st.error("Member already exists")
         else:
@@ -94,7 +76,6 @@ def head_dashboard(user):
 
     st.divider()
 
-    # -------- ASSIGN TASK --------
     st.subheader("➕ Assign New Task")
 
     members = get_all_members()
@@ -107,9 +88,11 @@ def head_dashboard(user):
 
     title = st.text_input("Task Title")
     description = st.text_area("Task Description")
-    member_name = st.selectbox("Assign To", list(member_map.keys()))
+
+    member_name = st.selectbox("Assign to", list(member_map.keys()))
+
     due_date = st.date_input("Due Date")
-    priority = st.selectbox("Priority", ["Low", "Medium", "High"])
+    priority = st.selectbox("Priority", ["Low","Medium","High"])
 
     send_email = st.checkbox("Send Email Notification")
 
@@ -130,9 +113,8 @@ def head_dashboard(user):
             priority
         )
 
-        st.success("✅ Task assigned successfully")
+        st.success("Task assigned successfully")
 
-        # ---- EMAIL NOTIFICATION ----
         if send_email:
 
             message = f"""
@@ -148,30 +130,26 @@ Assigned by: {user['name']}
 
             try:
                 send_notice_email(member_email, "New Task Assigned", message)
-                st.success(f"📧 Email sent to {member_email}")
+                st.success("Email sent")
             except Exception as e:
                 st.error(f"Email sending failed: {e}")
 
     st.divider()
 
-    # -------- ALL TASKS --------
     st.subheader("📊 All Members Work Status")
 
     tasks = get_all_tasks()
 
     if tasks:
         import pandas as pd
-
         df = pd.DataFrame(tasks)
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df)
     else:
         st.info("No tasks assigned yet")
 
-
-# ---------------- MEMBER DASHBOARD ----------------
 def member_dashboard(user):
 
-    st.subheader("🧑‍💻 My Tasks")
+    st.subheader("My Tasks")
 
     tasks = get_tasks_for_member(user["id"])
 
@@ -183,9 +161,10 @@ def member_dashboard(user):
 
         st.markdown(f"### {t[1]}")
         st.write(t[2])
-        st.write(f"📅 Due: {t[3]} | ⚡ Priority: {t[4]} | 📌 Status: {t[5]}")
+        st.write(f"Due: {t[3]} | Priority: {t[4]} | Status: {t[5]}")
 
         if t[5] != "Completed":
+
             if st.button(f"Mark Completed (Task {t[0]})"):
                 mark_task_completed(t[0])
                 st.success("Task marked as completed")
@@ -193,8 +172,5 @@ def member_dashboard(user):
 
         st.divider()
 
-
-# ---------------- ENTRY POINT ----------------
 if __name__ == "__main__":
     run()
-```
