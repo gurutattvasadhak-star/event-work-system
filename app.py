@@ -180,31 +180,36 @@ Assigned by: {user['name']}
 
     st.divider()
 
-    # ---------------- TASK STATUS ----------------
+   # ---------------- TASK STATUS ----------------
 
-    st.subheader("📊 All Members Work Status")
+st.subheader("📊 All Members Work Status")
 
-    tasks = get_all_tasks()
+tasks = get_all_tasks()
 
-    if tasks:
+if tasks:
 
-        df = pd.DataFrame(
-            tasks,
-            columns=[
-                "Task ID",
-                "Task",
-                "Description",
-                "Member",
-                "Due Date",
-                "Priority",
-                "Status"
-            ]
-        )
+```
+# Create dataframe automatically from DB result
+df = pd.DataFrame(tasks)
 
-        st.dataframe(df, use_container_width=True)
+# Safely assign column names based on expected DB structure
+if len(df.columns) == 8:
+    df.columns = [
+        "Task ID",
+        "Task",
+        "Description",
+        "Member ID",
+        "Head ID",
+        "Due Date",
+        "Priority",
+        "Status"
+    ]
 
-    else:
-        st.info("No tasks assigned yet")
+st.dataframe(df, use_container_width=True)
+```
+
+else:
+st.info("No tasks assigned yet")
 
 
 # ---------------- MEMBER DASHBOARD ----------------
@@ -240,3 +245,4 @@ def member_dashboard(user):
 
 if __name__ == "__main__":
     run()
+
